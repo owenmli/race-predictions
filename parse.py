@@ -12,8 +12,9 @@ with open('Project1_data.csv','rb') as csvfile:
         data.append(row)
 
 i=0
-data = data[1:28]
-parsed = []
+data = data[1:]
+X = []
+Y= []
 individualParsedData = []
 
 while i < len(data):
@@ -35,8 +36,11 @@ while i < len(data):
 	avgTime = 0
 	yearsSinceLast = 0
 
-
-	sex = partcipantData[0][3]
+	#MALE = 1 FEMALE = 0
+	if partcipantData[0][3] == "M":
+		sex = 1
+	else:
+		sex = 0
 
 	rankSum = 0
 	timeSum = 0
@@ -54,6 +58,19 @@ while i < len(data):
 	yearsSinceLast = 2017-lastMarathonYear
 
 	individualParsedData = [sex, avgRank, avgTime,yearsSinceLast]
-	parsed.append(individualParsedData)
+	X.append(individualParsedData)
 
-print parsed
+with open("parsedData.csv", "wb") as f:
+    writer = csv.writer(f)
+    writer.writerows(X)
+
+	# 1 = ATTENDED 2016
+	if yearsSinceLast == 1:
+		Y.append(1)
+	else:
+		Y.append(0)
+
+
+with open("attendance.csv","w") as f:
+    wr = csv.writer(f,delimiter="\n")
+    wr.writerow(Y)
