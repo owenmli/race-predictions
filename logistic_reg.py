@@ -17,13 +17,13 @@ with open('attendance.csv','rb') as csvfile:
     for row in reader:
         Y.append(row)
 
-X = X[1:]
-Y = Y[1:]
+X = X[0:]
+Y = Y[0:]
 
 X = np.matrix(X)
 Y = np.matrix(Y)
 W = np.zeros(4)
-W = np.matrix(W) 
+W = np.matrix(W)
 W = np.transpose(W)
 
 
