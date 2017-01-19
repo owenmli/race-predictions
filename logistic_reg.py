@@ -17,13 +17,13 @@ with open('attendance.csv','rb') as csvfile:
     for row in reader:
         Y.append(row)
 
-X = X[1:3]
-Y = Y[1:3]
+X = X[1:]
+Y = Y[1:]
 
 X = np.matrix(X)
 Y = np.matrix(Y)
 W = np.zeros(4)
-W = np.matrix(W)
+W = np.matrix(W) 
 W = np.transpose(W)
 
 
@@ -32,61 +32,58 @@ Y = Y.astype(np.float)
 W = W.astype(np.float)
 
 
-def logistic_func(W, x):
-	wt = np.transpose(W)
+def logistic_func(WT, x):
 	x = np.transpose(x)
-	dot = np.dot(wt,x)
-	#dot = np.squeeze(dot)
-	dot = np.asscalar(dot)
-	result = 1.0 / (1.0 + math.pow(math.e,-dot))
-	return result
+	WTx = np.dot(WT,x)
+	WTx = np.asscalar(WTx)
+	try:
+		power = math.pow(math.e,-WTx)
+	except Exception, e:
+		return 2.2250738585072014e-308
+	sigmoid = 1.0 / (1.0 + power)
+	if sigmoid == 1.0:
+		return 0.9999999999
+	else:
+		return sigmoid
 
 def error_func(W, X, Y):
-	errorSumP1 = 0.0
-	errorSumP2 = 0.0
 	totalError = 0.0
+	WT = np.transpose(W)
 	for(x,y) in zip(X,Y):
-		sigmoid = logistic_func(W,x)
-    	errorSumP1 = np.asscalar(y) * math.log(sigmoid)
-    	errorSumP2 = (1.0-np.asscalar(y)) * math.log(1.0 - sigmoid)
-    	totalError = totalError + errorSumP1 + errorSumP2
+		sigmoid = logistic_func(WT,x)
+		totalError += (np.asscalar(y) * math.log(sigmoid)) + ((1.0-np.asscalar(y)) * math.log(1.0 - sigmoid))
 	return -totalError
 
-def gradient_desc(W, X, Y, alpha=.001, converge_change=.001):
+def gradient_desc(W, X, Y, alpha=.000015, converge_change= 0.5):
     #normalize
-    #X = (X - np.mean(X, axis=0)) / np.std(X, axis=0)
-    #setup cost iter
+    X = (X - np.mean(X, axis=0)) / np.std(X, axis=0)
     error = error_func(W, X, Y)
     change_cost = 1
     i=0
     while(change_cost > converge_change):
-    	print "Iteration: " + str(i)
         old_error = error
-        W = W + (alpha * gradient(W, X, Y))
-        print "Weights: " + str(W)
+        W = W + (alpha * (gradient(W, X, Y)))
         error = error_func(W, X, Y)
         change_cost = old_error - error
+    	print "Iteration: " + str(i) + " Delta: " + str(change_cost) + " Error: " + str(error)
         i+=1
     return W
 
-def gradient(W, X, Y, alpha=.001):
+def gradient(W, X, Y):
 
-	partialSum = np.zeros(4)
-	partialSum = np.matrix(W)
+	# sumOfVectors = np.zeros(4)
+	# sumOfVectors = np.matrix(W)
+	sumOfVectors = 0.0
+
+	WT = np.transpose(W)
 
 	for(x,y) in zip(X,Y):
-		print x
-		print W
-		print "SIGMOID: " + str(logistic_func(W,X))
-		subtraction = np.asscalar(y) - logistic_func(W, x)
-		print "SUBTRACTION: " + str(subtraction)
-		print (np.dot(np.transpose(x),subtraction))
-		print "PARTIAL SUM1 : " + str(partialSum)
-		partialSum = partialSum + np.dot(np.transpose(x),subtraction)
-		print "PARTIAL SUM: " + str(partialSum)
+		subtraction = np.asscalar(y) - logistic_func(WT, x)
+		xt = np.transpose(x)
+		partialGradProduct = np.dot(xt,subtraction)
+		sumOfVectors += partialGradProduct
 
-	return partialSum
-
+	return sumOfVectors
 
 W = gradient_desc(W,X,Y)
 print W
