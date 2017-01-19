@@ -2,6 +2,7 @@ import numpy as np
 import csv
 import math
 from decimal import *
+import matplotlib.pyplot as plt
 
 
 
@@ -22,7 +23,7 @@ Y = Y[0:]
 
 X = np.matrix(X)
 Y = np.matrix(Y)
-W = np.zeros(4)
+W = np.zeros(5)
 W = np.matrix(W)
 W = np.transpose(W)
 
@@ -57,16 +58,28 @@ def error_func(W, X, Y):
 def gradient_desc(W, X, Y, alpha=.000015, converge_change= 0.5):
     #normalize
     X = (X - np.mean(X, axis=0)) / np.std(X, axis=0)
+    X = np.c_[np.ones(X.shape[0]),X]
+    cost_iter = []
     error = error_func(W, X, Y)
+    cost_iter.append([0, error])
     change_cost = 1
     i=0
     while(change_cost > converge_change):
         old_error = error
         W = W + (alpha * (gradient(W, X, Y)))
         error = error_func(W, X, Y)
+        cost_iter.append([i, error])
         change_cost = old_error - error
     	print "Iteration: " + str(i) + " Delta: " + str(change_cost) + " Error: " + str(error)
         i+=1
+
+	# plt.plot(cost_iter[:,0], cost_iter[:,1])
+	# plt.ylabel("Cost")
+	# plt.xlabel("Iteration")
+	# sns.despine()
+
+
+
     return W
 
 def gradient(W, X, Y):
@@ -87,3 +100,5 @@ def gradient(W, X, Y):
 
 W = gradient_desc(W,X,Y)
 print W
+
+
