@@ -7,34 +7,53 @@ import random
 
 
 
-X = []
+X2 = []
 with open('parsedData.csv','rb') as csvfile:
     reader = csv.reader(csvfile)
     for row in reader:
-        X.append(row)
+		X2.append(row)
 
-Y = []
-with open('attendance.csv','rb') as csvfile:
+Y2 = []
+with open('2016Attendance.csv','rb') as csvfile:
     reader = csv.reader(csvfile)
     for row in reader:
-        Y.append(row)
+		Y2.append(row)
 
-X = X[0:]
-Y = Y[0:]
+
+X2 = X2[1:]
+Y2 = Y2[1:]
+
+X = []
+Y = []
+
+
+for entry in X2:
+	entry = [float(i) for i in entry]
+	entry.pop(0)
+	X.append(entry)
+
+for entry in Y2:
+	entry = [float(i) for i in entry]
+	entry.pop(0)
+	Y.append(entry)
+
 
 X = np.matrix(X)
 Y = np.matrix(Y)
-W = np.zeros(5)
+W = np.zeros(2)
 W = np.matrix(W)
 W = np.transpose(W)
-
-
-
 
 
 X = X.astype(np.float)
 Y = Y.astype(np.float)
 W = W.astype(np.float)
+
+Z = []
+
+
+
+
 
 
 def logistic_func(WT, x):
@@ -98,13 +117,17 @@ def calcAccuracy(W,X,Y):
 	WT = np.transpose(W)
 	for (xi,y) in zip(X,Y):
 		result = logistic_func(WT,xi)
-		print result * 100
-		if (result > 0.5 and y == 1) or (result <= 0.5 and y == 0):
-			counter += 1
+		if(result >= 0.5):
+			Z.append(1)
+		else:
+			Z.append(0)
 
+		if (result >= 0.5 and y == 1) or (result < 0.5 and y == 0):
+			counter += 1
 
 	successrate = 100 * (float(counter)/float(len(X)))
 	print "Accuracy Rate: " + str(successrate) + "%"
+	print_predicted_attendance(Z,Y)
 
 
 # Wtest = np.zeros(5)
@@ -114,23 +137,38 @@ def calcAccuracy(W,X,Y):
 
 def generateNFoldWeights(n, X, Y, W):
 
-	combined = list(zip(X,Y))
-	random.shuffle(combined)
-	X[:], Y[:] = zip(*combined)
+	randomize = np.arange(len(X))
+	np.random.shuffle(randomize)
+	X = X[randomize]
+	Y = Y[randomize]
 
 	nlength = float(len(X))/n
-	nX = X[0:int(nlength)]
-	nY = Y[0:int(nlength)]
-	tX = X[int(nlength)+1:]
-	tY = Y[int(nlength)+1:]
+	testX = X[0:int(nlength)]
+	testY = Y[0:int(nlength)]	
+	trainX = X[int(nlength)+1:]
+	trainY = Y[int(nlength)+1:]
 
-	W = gradient_desc(W,nX,nY)
-	calcAccuracy(W,tX,tY)
+	W = gradient_desc(W,trainX,trainY)
+	print W
+	calcAccuracy(W,testX,testY)
+
 	#calcAccuracy(W, nX, nY)
 
 	# W = gradient_desc(W,nX, nY)
 	# calcAccuracy(W, nX,nY)
 	# calcAccuracy(W, tX, tY)
+
+
+
+
+def print_predicted_attendance(Z,Y):
+	with open("results.csv","w") as f:
+	    wr = csv.writer(f,delimiter="\n")
+	    wr.writerow(Z)
+
+	with open("testhalf.csv","w") as f:
+		wr = csv.writer(f,delimiter="\n")
+		wr.writerow(Y)
 
 
 
