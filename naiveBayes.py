@@ -71,9 +71,6 @@ def main():
 	featuresFrame["attendance"] = classFrame["Year"]
 	featuresFrame = featuresFrame.sample(frac=1).reset_index(drop=True)
 
-	testFrame = featuresFrame[3*len(featuresFrame)/4 + 1: ]
-	featuresFrame = featuresFrame[0: 3*len(featuresFrame)/4]
-
 	#separate into two classes
 	attendedFrame = featuresFrame[(featuresFrame.attendance == 1)]
 	unattendedFrame = featuresFrame[(featuresFrame.attendance == 0)]

@@ -43,6 +43,9 @@ W = W.astype(np.float)
 
 Z = []
 
+training_error = []
+validation_error = []
+
 
 
 def logistic_func(WT, x):
@@ -67,7 +70,7 @@ def error_func(W, X, Y):
 		totalError += (np.asscalar(y) * math.log(sigmoid)) + ((1.0-np.asscalar(y)) * math.log(1.0 - sigmoid))
 	return -totalError
 
-def gradient_desc(W, X, Y, alpha=.00015, converge_change= 0.5):
+def gradient_desc(W, X, Y, alpha=.000015, converge_change= 0.25):
 	X = (X - np.mean(X, axis=0)) / np.std(X, axis=0)
 	X = np.c_[np.ones(X.shape[0]),X]
 	error = error_func(W, X, Y)
@@ -77,6 +80,7 @@ def gradient_desc(W, X, Y, alpha=.00015, converge_change= 0.5):
 		old_error = error
 		W = W + (alpha * (gradient(W, X, Y)))
 		error = error_func(W, X, Y)
+		training_error.append(error)
 		change_cost = old_error - error
 		print "Iteration: " + str(i) + " Delta: " + str(change_cost) + " Error: " + str(error)
 		i+=1
