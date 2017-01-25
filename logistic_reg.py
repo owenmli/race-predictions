@@ -6,53 +6,42 @@ import matplotlib.pyplot as plt
 import random
 
 
+def getCSVAndFormat(CSVF_name):
+	targetMatrix = []
+	temp = []
+	with open(CSVF_name,'rb') as csvfile:
+		reader = csv.reader(csvfile)
+		for row in reader:
+			temp.append(row)
 
-X2 = []
-with open('parsedData.csv','rb') as csvfile:
-    reader = csv.reader(csvfile)
-    for row in reader:
-		X2.append(row)
+	temp = temp[1:]
 
-Y2 = []
-with open('2016Attendance.csv','rb') as csvfile:
-    reader = csv.reader(csvfile)
-    for row in reader:
-		Y2.append(row)
+	for entry in temp:
+		entry = [float(i) for i in entry]
+		entry.pop(0)
+		targetMatrix.append(entry)
 
+	targetMatrix = np.matrix(targetMatrix)
+	targetMatrix = targetMatrix.astype(np.float)
 
-X2 = X2[1:]
-Y2 = Y2[1:]
-
-X = []
-Y = []
-
-
-for entry in X2:
-	entry = [float(i) for i in entry]
-	entry.pop(0)
-	X.append(entry)
-
-for entry in Y2:
-	entry = [float(i) for i in entry]
-	entry.pop(0)
-	Y.append(entry)
+	return targetMatrix
 
 
-X = np.matrix(X)
-Y = np.matrix(Y)
-W = np.zeros(2)
+#Training 
+X = getCSVAndFormat('trainX.csv')
+Y = getCSVAndFormat('trainY.csv')
+
+#Validation
+Xval = getCSVAndFormat('valX.csv')
+Yval = getCSVAndFormat('valY.csv')
+
+
+W = np.zeros(6)
 W = np.matrix(W)
 W = np.transpose(W)
-
-
-X = X.astype(np.float)
-Y = Y.astype(np.float)
 W = W.astype(np.float)
 
 Z = []
-
-
-
 
 
 
@@ -112,52 +101,42 @@ def gradient(W, X, Y):
 
 def calcAccuracy(W,X,Y):
 	counter = 0
+	correctComing = 0
+	guessComing = 0
 	X = (X - np.mean(X, axis=0)) / np.std(X, axis=0)
 	X = np.c_[np.ones(X.shape[0]),X]
 	WT = np.transpose(W)
+	error = error_func(W,X,Y)
 	for (xi,y) in zip(X,Y):
 		result = logistic_func(WT,xi)
 		if(result >= 0.5):
 			Z.append(1)
+			guessComing += 1
 		else:
 			Z.append(0)
+
+		if result >= 0.5 and y==1:
+			correctComing += 1
 
 		if (result >= 0.5 and y == 1) or (result < 0.5 and y == 0):
 			counter += 1
 
 	successrate = 100 * (float(counter)/float(len(X)))
+	print "Guessed " + str(guessComing) + " are coming, " + str(correctComing) + " are correct."
 	print "Accuracy Rate: " + str(successrate) + "%"
 	print_predicted_attendance(Z,Y)
 
 
-# Wtest = np.zeros(5)
-# Wtest = np.matrix(Wtest)
-# Wtest = np.transpose(Wtest)
-
-
-def generateNFoldWeights(n, X, Y, W):
+def main(X, Y, W):
 
 	randomize = np.arange(len(X))
 	np.random.shuffle(randomize)
 	X = X[randomize]
 	Y = Y[randomize]
 
-	nlength = float(len(X))/n
-	testX = X[0:int(nlength)]
-	testY = Y[0:int(nlength)]	
-	trainX = X[int(nlength)+1:]
-	trainY = Y[int(nlength)+1:]
-
-	W = gradient_desc(W,trainX,trainY)
+	W = gradient_desc(W,X,Y)
+	calcAccuracy(W,X,Y)
 	print W
-	calcAccuracy(W,testX,testY)
-
-	#calcAccuracy(W, nX, nY)
-
-	# W = gradient_desc(W,nX, nY)
-	# calcAccuracy(W, nX,nY)
-	# calcAccuracy(W, tX, tY)
-
 
 
 
@@ -172,5 +151,5 @@ def print_predicted_attendance(Z,Y):
 
 
 
-generateNFoldWeights(2,X,Y,W)
+main(X,Y,W)
 
