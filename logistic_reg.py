@@ -35,8 +35,12 @@ Y = getCSVAndFormat('trainY.csv')
 Xval = getCSVAndFormat('valX.csv')
 Yval = getCSVAndFormat('valY.csv')
 
+#Test
+Xtest = getCSVAndFormat('testX.csv')
+Ytest = getCSVAndFormat('testY.csv')
+
 #Weights
-W = np.zeros(6)
+W = np.zeros(7)
 W = np.matrix(W)
 W = np.transpose(W)
 W = W.astype(np.float)
@@ -73,7 +77,7 @@ def error_func(W, X, Y):
 	return -totalError
 
 #applying gradient descent on the derived error function to train weights
-def gradient_desc(W, X, Y, alpha=.00015, converge_change= 0.5):
+def gradient_desc(W, X, Y, alpha=.0001, converge_change= 0.5):
 	#normalize data
 	X = (X - np.mean(X, axis=0)) / np.std(X, axis=0)
 	#Add column of ones to data to include intercept and get weight w0
@@ -157,11 +161,11 @@ def calcAccuracy(W,X,Y):
 	print "Accuracy rate of guessing a returning participant: " + str(comingRatio)
 	print "Accuracy rate of guessing a non-returning participant: " + str(notComingRatio)
 	print "Overall Accuracy Rate: " + str(successrate) + "%"
-	plt.scatter(*zip(*training_error))
-	plt.xlabel('Iterations')
-	plt.ylabel('Error')
-	plt.suptitle('Iterations vs Error during Gradient Descent in Logistic Regression')
-	plt.show()
+	# plt.scatter(*zip(*training_error))
+	# plt.xlabel('Iterations')
+	# plt.ylabel('Error')
+	# plt.suptitle('Iterations vs Error during Gradient Descent in Logistic Regression')
+	# plt.show()
 	print_predicted_attendance(Z,Y)
 
 
@@ -173,7 +177,9 @@ def main(X, Y, W):
 	Y = Y[randomize]
 
 	W = gradient_desc(W,X,Y)
-	calcAccuracy(W,X,Y)
+	calcAccuracy(W,Xval,Yval)
+	calcAccuracy(W,Xtest,Ytest)
+
 	print W
 
 

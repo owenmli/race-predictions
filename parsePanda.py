@@ -1,5 +1,6 @@
 import pandas as pd
-from sklearn.cross_validation import train_test_split
+import sklearn.utils 
+import numpy as np
 
 def is2016(x):
 	if x == 2016:
@@ -43,6 +44,7 @@ Y_max = data.Year.groupby(data.index).max()
 results = results.join(Y_max, how='inner', lsuffix='_other2')
 results = results.Year.groupby(results.index).mean()
 results = results.apply(is2016)
+results.columns = (['Attended'])
 
 
 #remove 2016
@@ -75,12 +77,12 @@ years_of_participation = data.Year.groupby(data.index).agg('count')
 #Latest age
 latest_age = data['Age Category'].groupby(data.index).max()
 
-#Attended 2015
-temp = data.copy()
-temp['AttendanceIn2015'] = 1
-temp['AttendanceIn2015'][temp['Year'] != 2015] = 0
-temp = temp.AttendanceIn2015.groupby(data.index).max()
-attended_in_2015 = temp.copy()
+# #Attended 2015
+# temp = data.copy()
+# temp['AttendanceIn2015'] = 1
+# temp['AttendanceIn2015'][temp['Year'] != 2015] = 0
+# temp = temp.AttendanceIn2015.groupby(data.index).max()
+# attended_in_2015 = temp.copy()
 
 
 #Average pace
@@ -88,18 +90,57 @@ data['Pace'] = data['Pace'].map(time_convert_pace)
 avg_pace_data = data.Pace.groupby(data.index).mean()
 
 #concat into a single matrix
-data = pd.concat([avg_rank_data,years_since_last, years_of_participation, latest_age, attended_in_2015], axis=1)
+data = pd.concat([sex_data ,avg_rank_data, avg_time_data, years_since_last, years_of_participation, latest_age, results], axis=1)
+data.columns = (['Sex','AvgRank','AvgTime','YearsSinceLast','YearsOfParticipation','LatestAge', 'Attended2016'])
 
-#Split train,test,validation
-trainX,testX = train_test_split(data,test_size = 0.2,random_state=94)
-trainX,validationX = train_test_split(trainX, test_size = 0.5,random_state=94)
 
-#Split train,test,validation
-trainY,testY = train_test_split(results,test_size = 0.2,random_state=94)
-trainY,validationY = train_test_split(trainY, test_size = 0.5,random_state=94)
+data = sklearn.utils.shuffle(data,random_state=0)
 
-trainX.columns = (['AvgRank','YearsSinceLast','YearsOfParticipation','LatestAge', 'AttendedIn2015'])
-trainY.columns = ['Attendance']
+
+# np.random.seed(97)
+# data = data.iloc[np.random.permutation(np.arange(len(data)))]
+
+#testX now contains 20% of my data
+testX, temp1, temp2, temp3, temp4 = np.array_split(data,5)
+
+trainX = pd.concat([temp1,temp4,temp3])
+#validationX = pd.concat([temp2,temp3])
+validationX = temp2
+
+# #data now has 80% of my data
+# data = pd.concat([temp1,temp2,temp3,temp4])
+
+# #trainX and validationX have a 50/50 split
+# validationX, trainX = np.array_split(data,2)
+
+
+#extract trainY
+trainY = trainX[trainX.columns[6]]
+trainY.columns = (['Attended2016'])
+
+
+validationY = validationX[validationX.columns[6]]
+validationY.columns = (['Attended2016'])
+
+testY = testX[testX.columns[6]]
+testY.columns = (['Attended2016'])
+
+del trainX['Attended2016']
+del validationX['Attended2016']
+del testX['Attended2016']
+
+
+# #Split train,test,validation
+# trainX,testX = train_test_split(data,test_size = 0.2,random_state=94)
+# trainX,validationX = train_test_split(trainX, test_size = 0.5,random_state=94)
+
+# #Split train,test,validation
+# trainY,testY = train_test_split(results,test_size = 0.2,random_state=94)
+# # trainY,validationY = train_test_split(trainY, test_size = 0.5,random_state=94)
+
+# trainX.columns = (['Sex','AvgRank','AvgTime','YearsSinceLast','YearsOfParticipation','LatestAge', 'AttendedIn2015'])
+# validationX.columns = (['Sex','AvgRank','AvgTime','YearsSinceLast','YearsOfParticipation','LatestAge', 'AttendedIn2015'])
+# testX.columns = (['Sex','AvgRank','AvgTime','YearsSinceLast','YearsOfParticipation','LatestAge', 'AttendedIn2015'])
 
 #CSVs for Training
 trainX.to_csv('trainX.csv', header=True)
@@ -117,4 +158,30 @@ testX.to_csv('testX.csv',header=True)
 testY.to_csv('testY.csv',header=True)
 
 
+
+# def shuffle_custom(data):
+# 	length = len(data)
+# 	end = int(length * 0.8)
+
+# 	parsedData = np.array(parsedData)
+
+# 	mergedData = np.c_[parsedData, parsedResult]
+
+# 	np.random.seed(0)
+# 	randomize = np.arange(len(mergedData))
+# 	np.random.shuffle(randomize)
+# 	mergedData = mergedData[randomize]
+
+# 	print mergedData
+
+# 	(row, col) = mergedData.shape
+
+# 	parsedResult = mergedData[:, col - 1]
+# 	parsedData = np.delete(mergedData, [col - 1], axis=1)
+
+# 	train_validate_data = parsedData[0:end]	
+# 	train_validate_result = parsedResult[0:end]
+
+# 	test_data = parsedData[end + 1 :]
+# 	test_result = parsedResult[end + 1 :]
 
