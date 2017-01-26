@@ -40,7 +40,7 @@ Xtest = getCSVAndFormat('testX.csv')
 Ytest = getCSVAndFormat('testY.csv')
 
 #Weights
-W = np.zeros(7)
+W = np.zeros(8)
 W = np.matrix(W)
 W = np.transpose(W)
 W = W.astype(np.float)
@@ -62,7 +62,7 @@ def logistic_func(WT, x):
 		return 2.2250738585072014e-308
 	sigmoid = 1.0 / (1.0 + power)
 	if sigmoid == 1.0:
-		return 0.9999999999
+		return 0.9999999999999999999
 	else:
 		return sigmoid
 

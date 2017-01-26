@@ -14,7 +14,6 @@ def attended2015(x):
 	else:
 		return 0
 
-
 def time_convert(x):
     timeStamp = x.split(':')
     return 3600*int(timeStamp[0])+60*int(timeStamp[1])+int(timeStamp[2])
@@ -77,6 +76,9 @@ years_of_participation = data.Year.groupby(data.index).agg('count')
 #Latest age
 latest_age = data['Age Category'].groupby(data.index).max()
 
+#Interaction Term b/w avgRank and years since last marathon
+avg_rank_x_years_since_last = avg_rank_data.multiply(years_since_last)
+
 # #Attended 2015
 # temp = data.copy()
 # temp['AttendanceIn2015'] = 1
@@ -84,28 +86,24 @@ latest_age = data['Age Category'].groupby(data.index).max()
 # temp = temp.AttendanceIn2015.groupby(data.index).max()
 # attended_in_2015 = temp.copy()
 
-
 #Average pace
 data['Pace'] = data['Pace'].map(time_convert_pace)
 avg_pace_data = data.Pace.groupby(data.index).mean()
 
 #concat into a single matrix
-data = pd.concat([sex_data ,avg_rank_data, avg_time_data, years_since_last, years_of_participation, latest_age, results], axis=1)
-data.columns = (['Sex','AvgRank','AvgTime','YearsSinceLast','YearsOfParticipation','LatestAge', 'Attended2016'])
+data = pd.concat([sex_data ,avg_rank_data, avg_time_data, years_since_last, years_of_participation, latest_age, avg_rank_x_years_since_last, results], axis=1)
+data.columns = (['Sex','AvgRank','AvgTime','YearsSinceLast','YearsOfParticipation','LatestAge', 'Interaction1', 'Attended2016'])
 
 
-data = sklearn.utils.shuffle(data,random_state=0)
-
-
-# np.random.seed(97)
-# data = data.iloc[np.random.permutation(np.arange(len(data)))]
+np.random.seed(94)
+data = data.iloc[np.random.permutation(np.arange(len(data)))]
 
 #testX now contains 20% of my data
 testX, temp1, temp2, temp3, temp4 = np.array_split(data,5)
 
-trainX = pd.concat([temp1,temp4,temp3])
-#validationX = pd.concat([temp2,temp3])
-validationX = temp2
+trainX = pd.concat([temp1,temp4])
+validationX = pd.concat([temp2,temp3])
+#validationX = temp2
 
 # #data now has 80% of my data
 # data = pd.concat([temp1,temp2,temp3,temp4])
@@ -114,15 +112,19 @@ validationX = temp2
 # validationX, trainX = np.array_split(data,2)
 
 
+testYCount = testX.groupby('Attended2016').count()
+validateYCount = validationX.groupby('Attended2016').count()
+trainYCount = trainX.groupby('Attended2016').count()
+
 #extract trainY
-trainY = trainX[trainX.columns[6]]
+trainY = trainX[trainX.columns[7]]
 trainY.columns = (['Attended2016'])
 
 
-validationY = validationX[validationX.columns[6]]
+validationY = validationX[validationX.columns[7]]
 validationY.columns = (['Attended2016'])
 
-testY = testX[testX.columns[6]]
+testY = testX[testX.columns[7]]
 testY.columns = (['Attended2016'])
 
 del trainX['Attended2016']
@@ -142,6 +144,12 @@ del testX['Attended2016']
 # validationX.columns = (['Sex','AvgRank','AvgTime','YearsSinceLast','YearsOfParticipation','LatestAge', 'AttendedIn2015'])
 # testX.columns = (['Sex','AvgRank','AvgTime','YearsSinceLast','YearsOfParticipation','LatestAge', 'AttendedIn2015'])
 
+
+
+testY.columns=(['Attended2016'])
+trainY.columns=(['Attended2016'])
+validationY.columns=(['Attended2016'])
+
 #CSVs for Training
 trainX.to_csv('trainX.csv', header=True)
 trainY.to_csv('trainY.csv', header=True)
@@ -156,6 +164,7 @@ validationY.to_csv('valY.csv',header=True)
 #CSVs for Test
 testX.to_csv('testX.csv',header=True)
 testY.to_csv('testY.csv',header=True)
+
 
 
 
@@ -184,4 +193,3 @@ testY.to_csv('testY.csv',header=True)
 
 # 	test_data = parsedData[end + 1 :]
 # 	test_result = parsedResult[end + 1 :]
-
