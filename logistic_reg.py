@@ -5,6 +5,7 @@ from decimal import *
 import matplotlib.pyplot as plt
 import random
 
+
 #Function to parse CSV and transform them into numpy matricies
 def getCSVAndFormat(CSVF_name):
 	targetMatrix = []
@@ -39,32 +40,28 @@ Yval = getCSVAndFormat('valY.csv')
 Xtest = getCSVAndFormat('testX.csv')
 Ytest = getCSVAndFormat('testY.csv')
 
+#2017
+X2017 = getCSVAndFormat('trainX2017.csv')
+Y2017 = getCSVAndFormat('trainY2017.csv')
+wholeSet = getCSVAndFormat('predict2017.csv')
+
+
 #Weights
-W = np.zeros(8)
+W = np.zeros(7)
 W = np.matrix(W)
 W = np.transpose(W)
 W = W.astype(np.float)
 
 Z = []
-
-training_error = []
+predictionsFor2017 = []
 
 
 #Calculating sigmoid
-def logistic_func(WT, x):
+def calculate_sigmoid(WT, x):
 	x = np.transpose(x)
 	WTx = np.dot(WT,x)
 	WTx = np.asscalar(WTx)
-	try:
-		power = math.pow(math.e,-WTx)
-	except Exception, e:
-		#To avoid math domain errors, we never want sigmoid to reach 1 or 0, we instead return a number very close to 1 or very close to 0
-		return 2.2250738585072014e-308
-	sigmoid = 1.0 / (1.0 + power)
-	if sigmoid == 1.0:
-		return 0.9999999999999999999
-	else:
-		return sigmoid
+	return 1/(1+np.power(np.e,-WTx))
 
 #Calculating the error function in logistic regression
 def error_func(W, X, Y):
@@ -72,27 +69,23 @@ def error_func(W, X, Y):
 	WT = np.transpose(W)
 	#iterate through each "person/row" to sum the total error
 	for(x,y) in zip(X,Y):
-		sigmoid = logistic_func(WT,x)
+		sigmoid = calculate_sigmoid(WT,x)
 		totalError += (np.asscalar(y) * math.log(sigmoid)) + ((1.0-np.asscalar(y)) * math.log(1.0 - sigmoid))
 	return -totalError
 
 #applying gradient descent on the derived error function to train weights
-def gradient_desc(W, X, Y, alpha=.0001, converge_change= 0.5):
-	#normalize data
-	X = (X - np.mean(X, axis=0)) / np.std(X, axis=0)
-	#Add column of ones to data to include intercept and get weight w0
-	X = np.c_[np.ones(X.shape[0]),X]
+def gradient_desc(W, X, Y, alpha=.0001, tolerance= 0.5):
+	X = normalize_add_intercept(X)
 	error = error_func(W, X, Y)
-	change_cost = 1
+	delta = 1
 	i=0
 	#We continue iteration until our error is below a tolerance threshold. We define delta as the OldError - NewError. When delta is sufficiently small, stop iteration.
-	while(change_cost > converge_change):
-		old_error = error
+	while(tolerance < delta):
+		error_prev = error
 		W = W + (alpha * (gradient(W, X, Y)))
 		error = error_func(W, X, Y)
-		training_error.append([i,error])
-		change_cost = old_error - error
-		print "Iteration: " + str(i) + " Delta: " + str(change_cost) + " Error: " + str(error)
+		delta = error_prev - error
+		print "Iteration: " + str(i) + " Delta: " + str(delta) + " Error: " + str(error)
 		i+=1
 	return W
 
@@ -102,12 +95,11 @@ def gradient(W, X, Y):
 	WT = np.transpose(W)
 	#Need to iterate through each "person/row"
 	for(x,y) in zip(X,Y):
-		subtraction = np.asscalar(y) - logistic_func(WT, x)
+		subtraction = np.asscalar(y) - calculate_sigmoid(WT, x)
 		xt = np.transpose(x)
 		partialGradProduct = np.dot(xt,subtraction)
 		sumOfVectors += partialGradProduct
 	return sumOfVectors
-
 
 #Function to check our accuracy and guesses on our final weights
 def calcAccuracy(W,X,Y):
@@ -122,18 +114,18 @@ def calcAccuracy(W,X,Y):
 	#Counter of how many people I gussed were not comming AND they are actually not coming
 	correctNotComing = 0
 
-	#Get final error
-	X = (X - np.mean(X, axis=0)) / np.std(X, axis=0)
-	X = np.c_[np.ones(X.shape[0]),X]
-	WT = np.transpose(W)
-	error = error_func(W,X,Y)
-	print "Final Error is: " + str(error)
+	X = normalize_add_intercept(X)
+	# #Get final error
+	# WT = np.transpose(W)
+	# error = error_func(W,X,Y)
+	# print "Final Error is: " + str(error)
 
 	#Check how right we were with these weights
 	actual_coming, actual_not_coming = getStats(Y)
 	#For each person, we check the results of what our logistic function gives
+	WT = np.transpose(W)
 	for (xi,y) in zip(X,Y):
-		result = logistic_func(WT,xi)
+		result = calculate_sigmoid(WT,xi)
 		#Sigmoid is above 0.5, we classify as YES/COMING
 		if(result >= 0.5):
 			Z.append(1)
@@ -153,14 +145,29 @@ def calcAccuracy(W,X,Y):
 	comingRatio = (float(correctComing)/actual_coming)*100
 	notComingRatio = (float(correctNotComing)/actual_not_coming)*100
 
-	#Define success rate by number of CORRECT guesses, over number of TOTAL guesses
-	print len(X)
-	successrate = 100 * (float(counter)/float(len(X)))
+	accuracy = (float(counter)/float(len(X)))
+
+	precision = float(correctComing)/(guessComing)
+
+	recall = float(correctComing)/(actual_coming)
+
+	falsePositiveRate = float((guessComing-correctComing))/((guessComing-correctComing) + correctNotComing)
+
+	if recall != 0:
+		F1Measure = 2*((precision*recall)/(precision+recall))
+
+
+	print "Accuracy: " + str(accuracy)
+	print "Precision: " + str(precision)
+	print "Recall: " + str(recall)
+	print "False Positive  Rate: " + str(falsePositiveRate)
+	print "F1 Measure: " + str(F1Measure)
+
+
 	print "Out of: " + str(actual_coming) + " actually coming, " + "guessed " + str(guessComing) + " are coming, " + str(correctComing) + " are correct."
 	print "Out of: " + str(actual_not_coming) + " actually not coming, " + "guessed " + str(guessNotComing) + " are not coming, " + str(correctNotComing) + " are correct."
 	print "Accuracy rate of guessing a returning participant: " + str(comingRatio)
 	print "Accuracy rate of guessing a non-returning participant: " + str(notComingRatio)
-	print "Overall Accuracy Rate: " + str(successrate) + "%"
 	# plt.scatter(*zip(*training_error))
 	# plt.xlabel('Iterations')
 	# plt.ylabel('Error')
@@ -176,11 +183,22 @@ def main(X, Y, W):
 	X = X[randomize]
 	Y = Y[randomize]
 
-	W = gradient_desc(W,X,Y)
-	calcAccuracy(W,Xval,Yval)
-	calcAccuracy(W,Xtest,Ytest)
+	#TWO FOLD
+	W1 = gradient_desc(W,X,Y)
+	calcAccuracy(W1,Xval,Yval)
+	W2 = gradient_desc(W,Xval,Yval)
+	calcAccuracy(W2,X,Y)
 
-	print W
+	print "=================ON TEST SET=========================================="
+
+	calcAccuracy(W2,Xtest,Ytest)
+	# #2017
+	# W = gradient_desc(W,X,Y)
+	# get2017Predictions(W,wholeSet)
+
+
+	print W1
+	print W2
 
 
 
@@ -203,6 +221,32 @@ def getStats(Y):
 		else:
 			numberOfNo +=1
 	return numberOfYes,numberOfNo
+
+
+
+def get2017Predictions(W,X):
+	X = normalize_add_intercept(X)
+	WT = np.transpose(W)
+	for xi in X:
+		result = calculate_sigmoid(WT,xi)
+		#Sigmoid is above 0.5, we classify as YES/COMING
+		if(result >= 0.5):
+			predictionsFor2017.append(1)
+		else:
+			predictionsFor2017.append(0)
+
+	with open("2017PredictionsFinal.csv","w") as f:
+		wr = csv.writer(f,delimiter="\n")
+		wr.writerow(predictionsFor2017)
+
+
+
+
+def normalize_add_intercept(X):
+	X = (X - np.mean(X, axis=0)) / np.std(X, axis=0)
+	X = np.c_[np.ones(X.shape[0]),X]
+	return X
+
 
 main(X,Y,W)
 

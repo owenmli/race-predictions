@@ -23,74 +23,102 @@ Steps for Naive Bayes:
 7. Predict after making these estimations
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-def calculateProbability(x, mean, stdev):
-	exponent = math.exp(-(math.pow(x-mean,2)/(2*math.pow(stdev,2))))
-	return (1 / (math.sqrt(2*math.pi) * stdev)) * exponent
 
-def calculateClassProbabilities(summaries, input):
+
+def calculateProbabilityDensity(x, mean, standardDev):
+	rightSide = math.exp(- (math.pow(x - mean, 2) / (2 * math.pow(standardDev , 2)) ))
+	leftSide =  1 / (math.sqrt(2 * math.pi) * standardDev)
+	return leftSide * rightSide
+
+def calculateClassProbabilities(featureMap, inputRow):
 	probabilities = {}
-	for classValue, classSummaries in summaries.iteritems():
+	for classValue, classFeatures in featureMap.iteritems():
 		probabilities[classValue] = 1
-		for i in range(len(classSummaries)):
-			mean, stdev = classSummaries[i]
-			x = input[i]
-			probabilities[classValue] *= calculateProbability(x, mean, stdev)
+		for i in range(len(classFeatures)):
+			mean, standardDev = classFeatures[i]
+			x = inputRow[i]
+			probabilities[classValue] *= calculateProbabilityDensity(x, mean, standardDev)
 	return probabilities
 
-def predict(summaries, input):
-	probabilities = calculateClassProbabilities(summaries, input)
-	bestLabel, bestProb = None, -1
-	for classValue, probability in probabilities.iteritems():
-		if bestLabel is None or probability > bestProb:
-			bestProb = probability
-			bestLabel = classValue
+def predictForFeatures(featureMap, inputRow):
+	probabilities = calculateClassProbabilities(featureMap, inputRow)
+	bestLabel = 1
+	bestProbability = probabilities[1]
+	if (probabilities[0] > bestProbability):
+		bestLabel = 0
 	return bestLabel
 
-def getPredictions(summaries, testSet):
+def getPredictions(featureMap, testSet):
 	predictions = []
 	for i in range(len(testSet)):
-		result = predict(summaries, testSet[i])
+		result = predictForFeatures(featureMap, testSet[i])
 		predictions.append(result)
 	return predictions
 
-def getAccuracy(testSet, predictions):
-	correct = 0
+#for testing purposes only
+def getTotalAccuracy(testSet, predictions):
+	correctPredictions = 0
 	for x in range(len(testSet)):
 		if testSet[x][-1] == predictions[x]:
-			correct += 1
-	return (correct/float(len(testSet))) * 100.0
+			correctPredictions += 1
+	return (correctPredictions / float(len(testSet))) * 100.0
+
+#for testing purposes only
+def getAttendanceAccuracy(testSet, predictions):
+	predictedAttendance = 0
+	correctPredictions = 0
+	for x in range(len(testSet)):
+		if predictions[x] == 1:
+			predictedAttendance += 1
+			if testSet[x][-1] == 1:
+				correctPredictions += 0
+	print ("correct predictions: %d" % correctPredictions) 
+	print ("total attendance predictions: %d" % predictedAttendance)
+
+	return (correctPredictions/float(predictedAttendance)) * 100.0
+
+def readAndConcatFeaturesToResult(file1, file2):
+	features = pd.read_csv(file1, header = 0)
+	features.drop(["Id"], inplace = True, axis = 1)
+	Y = pd.read_csv(file2, header = 0)
+	Y.drop(["Id"], inplace = True, axis = 1)
+	features["Attended2016"] = Y["Attended2016"]
+	return features
 
 def main():
-	classFile = "trainY.csv"
-	featuresFile = "trainX.csv"
+	XFileName = "trainX2017.csv"
+	YFileName = "trainY2017.csv"
+	features = readAndConcatFeaturesToResult(XFileName, YFileName)
+	#concat 
 
-	featuresFrame = pd.read_csv(featuresFile, header=0)
-	featuresFrame.drop(["Id"],inplace=True,axis=1)
-	classFrame = pd.read_csv(classFile, header=0)
-	classFrame.drop(["Id"],inplace=True,axis=1)
-	featuresFrame["attendance"] = classFrame["Year"]
-	featuresFrame = featuresFrame.sample(frac=1).reset_index(drop=True)
+	#separate features into two classes
+	yesFeatures = features[(features.Attended2016 == 1)]
+	noFeatures = features[(features.Attended2016 == 0)]
 
-	#separate into two classes
-	attendedFrame = featuresFrame[(featuresFrame.attendance == 1)]
-	unattendedFrame = featuresFrame[(featuresFrame.attendance == 0)]
+	#calculate mean and st.dev for each class
+	yesFeaturesNormalized = [(yesFeatures[column].mean(), yesFeatures[column].std()) for column in yesFeatures]
+	noFeaturesNormalized = [(noFeatures[column].mean(), noFeatures[column].std()) for column in noFeatures]
 
-	#calculate mean and st.dev for each 
-	meanAndStDevAttended = [(attendedFrame[column].mean(), attendedFrame[column].std()) for column in attendedFrame]
-	meanAndStDevUnAttended = [(unattendedFrame[column].mean(), unattendedFrame[column].std()) for column in unattendedFrame]
+	print yesFeaturesNormalized
+	print noFeaturesNormalized
 
-	summarizedValues = {}
-	summarizedValues[meanAndStDevAttended[-1][0]] = meanAndStDevAttended[0:-1]
-	summarizedValues[meanAndStDevUnAttended[-1][0]] = meanAndStDevUnAttended[0:-1]
-	npTestMatrix = testFrame.as_matrix()
+	classToFeatures = {}
+	classToFeatures[1] = yesFeaturesNormalized[0 : -1]
+	classToFeatures[0] = noFeaturesNormalized[0 : -1]
 
-	predictions = getPredictions(summarizedValues, npTestMatrix)
-	accuracy = getAccuracy(npTestMatrix, predictions)
+	print classToFeatures
+	# validation = readAndConcatFeaturesToResult(XValFile, YValFile)
+	validation = pd.read_csv("predict2017.csv", header = 0)
+	predictions = getPredictions(classToFeatures, validation.as_matrix())
+	with open("2017BayesPredictions.csv", "w") as bayesOutputFile:
+		wr = csv.writer(bayesOutputFile,delimiter = "\n")
+		wr.writerow(predictions)
 
-	print('Accuracy: {0}%').format(accuracy)
+	# print('Total Accuracy: {0}%').format(totalAccuracy)
+	# print('Attendance Accuracy: {0}%').format(attendanceAccuracy)
 
 
-	return attendedFrame, unattendedFrame
+
 
 
 
